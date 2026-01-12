@@ -30,6 +30,30 @@ function App() {
     return persons.find(p => p.id === selectedPersonId);
   }, [persons, selectedPersonId]);
 
+  // Determine Logo URL
+  const currentLogoUrl = useMemo(() => {
+    if (!selectedPerson) return undefined;
+    
+    // 1. If database has the URL, use it
+    if (selectedPerson.logo_url) return selectedPerson.logo_url;
+
+    // 2. Fallback hardcoded logic based on user request
+    const name = selectedPerson.name.toUpperCase();
+    
+    // Akif Rifqi Logo
+    if (name.includes('AKIF')) {
+      return 'https://mrgjokwsphsgxekkwhdb.supabase.co/storage/v1/object/sign/logo/sks7.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mZWRhMDhkZi1kMWQ0LTQyMmEtYWQzYi05ZGQzNjEwOTIzMTEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL3NrczcucG5nIiwiaWF0IjoxNzY4MTk4MDg5LCJleHAiOjMzNDQ5OTgwODl9.2cA2tivxT7DjKMMTHqBlxDlYCqy1zB9uT2mraX-wj3c';
+    }
+    
+    // Adeeb Razin and Khadijah Logo
+    if (name.includes('ADEEB') || name.includes('KHADIJAH')) {
+      return 'https://mrgjokwsphsgxekkwhdb.supabase.co/storage/v1/object/sign/logo/smksgramal.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mZWRhMDhkZi1kMWQ0LTQyMmEtYWQzYi05ZGQzNjEwOTIzMTEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL3Nta3NncmFtYWwucG5nIiwiaWF0IjoxNzY4MTk4MTY2LCJleHAiOjMzNDQ5OTgxNjZ9.QRAAPemCubDjrSlq_moLMTrKnN1Ol6DNx0L0JOHckK8';
+    }
+
+    // Default fallback
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png';
+  }, [selectedPerson]);
+
   // If credentials are missing, show the setup screen immediately
   if (!isConfigured) {
     return (
@@ -339,6 +363,7 @@ function App() {
         <PrintableTimetable 
           slots={slots} 
           personName={selectedPerson?.name || ''} 
+          logoUrl={currentLogoUrl}
         />
       </div>
     </>
