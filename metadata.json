@@ -1,0 +1,5 @@
+{
+  "name": "Supabase Realtime Timetable",
+  "description": "A responsive, realtime school timetable application with Supabase backend, supporting public views and admin editing.",
+  "requestFramePermissions": []
+}
