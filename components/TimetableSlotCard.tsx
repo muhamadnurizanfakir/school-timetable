@@ -6,13 +6,14 @@ interface TimetableSlotCardProps {
   isAdmin: boolean;
   onEdit: (slot: TimetableSlot) => void;
   onDelete: (id: string) => void;
+  className?: string;
 }
 
-export const TimetableSlotCard: React.FC<TimetableSlotCardProps> = ({ slot, isAdmin, onEdit, onDelete }) => {
+export const TimetableSlotCard: React.FC<TimetableSlotCardProps> = ({ slot, isAdmin, onEdit, onDelete, className = '' }) => {
   const color = getSubjectColor(slot.subject);
 
   return (
-    <div className={`${color.bg} ${color.border} border rounded-lg p-3 mb-2 shadow-sm relative group transition-all hover:shadow-md`}>
+    <div className={`${color.bg} ${color.border} border rounded-lg p-3 shadow-sm relative group transition-all hover:shadow-md ${className}`}>
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 pr-2">
           <div className="flex items-center space-x-2 mb-1">
