@@ -135,15 +135,15 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                     const isMulti = slotsStartingHere.length > 1;
                     
                     cells.push(
-                        <td key={i} colSpan={span} className={`border border-gray-400 p-1 relative ${color.bg} align-top`}>
+                        <td key={i} colSpan={span} className={`border border-gray-400 p-0 relative ${color.bg} align-top`}>
                             {/* Flex-col ensures vertical stacking of items */}
                             <div className={`w-full h-full min-h-[80px] flex flex-col justify-center items-center`}>
                                 {slotsStartingHere.map((slot, idx) => (
                                     <div 
                                       key={idx} 
                                       className={`
-                                        flex-1 flex flex-col items-center justify-center text-center w-full 
-                                        ${isMulti && idx > 0 ? 'border-t border-gray-400/50 pt-1' : ''}
+                                        flex-1 flex flex-col items-center justify-center text-center w-full p-1
+                                        ${isMulti && idx > 0 ? 'border-t border-gray-400' : ''}
                                       `}
                                     >
                                         <div className={`
