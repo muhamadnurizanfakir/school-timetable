@@ -5,6 +5,7 @@ import { AuthModal } from './components/AuthModal';
 import { TimetableSlotCard } from './components/TimetableSlotCard';
 import { SlotEditor } from './components/SlotEditor';
 import { Button } from './components/Button';
+import { PrintableTimetable } from './components/PrintableTimetable';
 
 function App() {
   const [persons, setPersons] = useState<Person[]>([]);
@@ -24,6 +25,10 @@ function App() {
   const isAdmin = useMemo(() => {
     return !!session;
   }, [session]);
+
+  const selectedPerson = useMemo(() => {
+    return persons.find(p => p.id === selectedPersonId);
+  }, [persons, selectedPersonId]);
 
   // If credentials are missing, show the setup screen immediately
   if (!isConfigured) {
@@ -194,124 +199,149 @@ function App() {
     setEditingSlot(null);
     setIsEditorOpen(true);
   };
+  
+  const handlePrint = () => {
+    window.print();
+  };
 
   if (loading && isConfigured) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-indigo-600 font-medium">Loading Timetable...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">School Timetable</h1>
-              <span className="text-xs text-gray-500 hidden sm:block">Realtime Updates</span>
-            </div>
-            
-            {/* Person Selector */}
-            <div className="relative">
-              <select
-                value={selectedPersonId}
-                onChange={(e) => setSelectedPersonId(e.target.value)}
-                className="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 py-2 pl-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium"
-              >
-                {persons.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+    <>
+      {/* --- Main App (Hidden on Print) --- */}
+      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans print:hidden">
+        {/* Header */}
+        <header className="bg-white shadow-sm sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">School Timetable</h1>
+                <span className="text-xs text-gray-500 hidden sm:block">Realtime Updates</span>
+              </div>
+              
+              {/* Person Selector */}
+              <div className="relative">
+                <select
+                  value={selectedPersonId}
+                  onChange={(e) => setSelectedPersonId(e.target.value)}
+                  className="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 py-2 pl-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium"
+                >
+                  {persons.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            {isAdmin ? (
-               <div className="flex items-center space-x-2">
-                 <span className="text-xs text-gray-500 hidden sm:inline mr-2">Admin Mode</span>
-                 <Button variant="primary" onClick={handleAddSlot} className="text-sm">
-                   + Add Slot
-                 </Button>
-                 <button onClick={handleLogout} className="text-gray-500 hover:text-red-600 p-2">
-                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                 </button>
-               </div>
-            ) : (
-              <button onClick={() => setIsAuthModalOpen(true)} className="text-sm text-indigo-600 font-medium hover:text-indigo-800">
-                Admin Login
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={handlePrint}
+                className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors"
+                title="Print Timetable"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+                </svg>
               </button>
-            )}
-          </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!selectedPersonId ? (
-          <div className="text-center py-20 text-gray-500">
-            No active schedules found. Admin needs to set up Persons.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {DAYS.map(day => {
-              const daySlots = slotsByDay[day] || [];
-              // Group slots by time for side-by-side rendering
-              const timeGroups = groupSlotsByTime(daySlots);
-
-              return (
-                <div key={day} className="flex flex-col">
-                  <div className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-t-lg text-center uppercase tracking-wide text-sm mb-2">
-                    {day}
-                  </div>
-                  <div className="flex-1 space-y-2 min-h-[100px]">
-                    {timeGroups.length > 0 ? (
-                      timeGroups.map((group, groupIndex) => {
-                        const isMulti = group.length > 1;
-                        return (
-                          <div 
-                            key={groupIndex} 
-                            className={`w-full ${isMulti ? 'grid grid-cols-2 gap-2' : ''}`}
-                          >
-                            {group.map(slot => (
-                              <TimetableSlotCard
-                                key={slot.id}
-                                slot={slot}
-                                isAdmin={!!isAdmin}
-                                onEdit={handleEditSlot}
-                                onDelete={handleDeleteSlot}
-                                className="h-full" 
-                              />
-                            ))}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-6 text-gray-400 text-sm">
-                        No classes
-                      </div>
-                    )}
-                  </div>
+              {isAdmin ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500 hidden sm:inline mr-2">Admin Mode</span>
+                  <Button variant="primary" onClick={handleAddSlot} className="text-sm">
+                    + Add Slot
+                  </Button>
+                  <button onClick={handleLogout} className="text-gray-500 hover:text-red-600 p-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </button>
                 </div>
-              );
-            })}
+              ) : (
+                <button onClick={() => setIsAuthModalOpen(true)} className="text-sm text-indigo-600 font-medium hover:text-indigo-800">
+                  Admin Login
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </main>
+        </header>
 
-      {/* Modals */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-      
-      {isEditorOpen && selectedPersonId && (
-        <SlotEditor 
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          personId={selectedPersonId}
-          initialData={editingSlot}
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {!selectedPersonId ? (
+            <div className="text-center py-20 text-gray-500">
+              No active schedules found. Admin needs to set up Persons.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              {DAYS.map(day => {
+                const daySlots = slotsByDay[day] || [];
+                // Group slots by time for side-by-side rendering
+                const timeGroups = groupSlotsByTime(daySlots);
+
+                return (
+                  <div key={day} className="flex flex-col">
+                    <div className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-t-lg text-center uppercase tracking-wide text-sm mb-2">
+                      {day}
+                    </div>
+                    <div className="flex-1 space-y-2 min-h-[100px]">
+                      {timeGroups.length > 0 ? (
+                        timeGroups.map((group, groupIndex) => {
+                          const isMulti = group.length > 1;
+                          return (
+                            <div 
+                              key={groupIndex} 
+                              className={`w-full ${isMulti ? 'grid grid-cols-2 gap-2' : ''}`}
+                            >
+                              {group.map(slot => (
+                                <TimetableSlotCard
+                                  key={slot.id}
+                                  slot={slot}
+                                  isAdmin={!!isAdmin}
+                                  onEdit={handleEditSlot}
+                                  onDelete={handleDeleteSlot}
+                                  className="h-full" 
+                                />
+                              ))}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-6 text-gray-400 text-sm">
+                          No classes
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+
+        {/* Modals */}
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+        
+        {isEditorOpen && selectedPersonId && (
+          <SlotEditor 
+            isOpen={isEditorOpen}
+            onClose={() => setIsEditorOpen(false)}
+            personId={selectedPersonId}
+            initialData={editingSlot}
+          />
+        )}
+      </div>
+
+      {/* --- Printable View (Visible only on Print) --- */}
+      <div className="hidden print:block">
+        <PrintableTimetable 
+          slots={slots} 
+          personName={selectedPerson?.name || ''} 
         />
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
