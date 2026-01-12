@@ -359,7 +359,11 @@ function App() {
       </div>
 
       {/* --- Printable View (Visible only on Print) --- */}
-      <div className="hidden print:block">
+      {/* 
+          Use h-0 overflow-hidden instead of display:none (hidden) to ensure images 
+          are loaded by the browser even before the print dialog opens.
+      */}
+      <div className="h-0 overflow-hidden print:h-auto print:overflow-visible">
         <PrintableTimetable 
           slots={slots} 
           personName={selectedPerson?.name || ''} 
