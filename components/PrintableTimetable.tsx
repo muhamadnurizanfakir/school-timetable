@@ -132,18 +132,28 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
 
                     // Render the cell
                     const color = getSubjectColor(slotsStartingHere[0].subject);
+                    const isMulti = slotsStartingHere.length > 1;
                     
                     cells.push(
                         <td key={i} colSpan={span} className={`border border-gray-400 p-1 relative ${color.bg} align-top`}>
-                            {/* Changed to flex-col to stack multiple subjects vertically (rows) instead of horizontally */}
+                            {/* Flex-col ensures vertical stacking of items */}
                             <div className={`w-full h-full min-h-[80px] flex flex-col justify-center items-center`}>
                                 {slotsStartingHere.map((slot, idx) => (
-                                    <div key={idx} className={`flex-1 flex flex-col items-center justify-center text-center w-full ${slotsStartingHere.length > 1 && idx > 0 ? 'border-t border-gray-300 pt-1' : ''}`}>
-                                        <div className={`text-xl font-black ${color.text} leading-tight uppercase`}>
+                                    <div 
+                                      key={idx} 
+                                      className={`
+                                        flex-1 flex flex-col items-center justify-center text-center w-full 
+                                        ${isMulti && idx > 0 ? 'border-t border-gray-400/50 pt-1' : ''}
+                                      `}
+                                    >
+                                        <div className={`
+                                          font-black ${color.text} leading-tight uppercase
+                                          ${isMulti ? 'text-sm' : 'text-xl'}
+                                        `}>
                                             {slot.subject}
                                         </div>
                                         {slot.teacher && (
-                                            <div className="text-[10px] font-semibold text-gray-600 mt-1 bg-white/40 px-1 rounded">
+                                            <div className="text-[10px] font-semibold text-gray-600 mt-0.5 bg-white/40 px-1 rounded">
                                                 {slot.teacher}
                                             </div>
                                         )}
