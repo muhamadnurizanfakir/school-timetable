@@ -1,0 +1,198 @@
+import React, { useMemo } from 'react';
+import { TimetableSlot, DAYS, getSubjectColor, getMinutesFromTime, formatTime } from '../types';
+
+interface PrintableTimetableProps {
+  slots: TimetableSlot[];
+  personName: string;
+}
+
+export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, personName }) => {
+  // 1. Calculate the Time Grid
+  // We need to find every unique start and end time to create our grid columns.
+  const timeGrid = useMemo(() => {
+    const times = new Set<number>();
+    
+    // Default bounds (e.g., 7:30 AM to 6:30 PM if empty)
+    times.add(7 * 60 + 30);
+    times.add(18 * 60 + 30);
+
+    slots.forEach(slot => {
+      times.add(getMinutesFromTime(slot.start_time));
+      times.add(getMinutesFromTime(slot.end_time));
+    });
+
+    const sortedTimes = Array.from(times).sort((a, b) => a - b);
+    
+    // Create intervals [start, end, duration]
+    const intervals: { start: number; end: number; label: string }[] = [];
+    for (let i = 0; i < sortedTimes.length - 1; i++) {
+      intervals.push({
+        start: sortedTimes[i],
+        end: sortedTimes[i+1],
+        label: `${formatMinToTime(sortedTimes[i])} - ${formatMinToTime(sortedTimes[i+1])}`
+      });
+    }
+    return intervals;
+  }, [slots]);
+
+  return (
+    <div className="w-full bg-white p-4">
+      <style>
+        {`
+          @media print {
+            @page {
+              size: landscape;
+              margin: 10mm;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+        `}
+      </style>
+
+      {/* Header */}
+      <div className="text-center mb-6 border-b-2 border-gray-800 pb-2">
+        <div className="flex items-center justify-center space-x-4">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png" alt="Logo" className="h-16 w-auto opacity-80" />
+            <div>
+                <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase font-sans">{personName || 'TIMETABLE'}</h1>
+                <p className="text-gray-600 text-sm mt-1 uppercase tracking-widest">School Schedule • {new Date().getFullYear()}</p>
+            </div>
+        </div>
+      </div>
+
+      {/* Timetable Grid */}
+      <div className="w-full border-2 border-gray-800 rounded-sm overflow-hidden">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-400 p-2 w-20 text-center font-bold text-gray-800 bg-gray-200">
+                DAY
+              </th>
+              {timeGrid.map((interval, idx) => (
+                <th key={idx} className="border border-gray-400 p-1 text-[10px] text-center font-medium text-gray-600 w-24 h-12 bg-gray-50">
+                  <div className="flex flex-col justify-center h-full">
+                     <span>{formatMinToTime(interval.start)}</span>
+                     <span className="text-gray-400 text-[8px]">-</span>
+                     <span>{formatMinToTime(interval.end)}</span>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {DAYS.map((day) => {
+              const daySlots = slots.filter((s) => s.day_of_week === day);
+              
+              // Helper to find slots in a specific interval
+              const getSlotsInInterval = (start: number, end: number) => {
+                return daySlots.filter(s => {
+                    const sStart = getMinutesFromTime(s.start_time);
+                    const sEnd = getMinutesFromTime(s.end_time);
+                    // Check intersection
+                    return sStart < end && sEnd > start;
+                });
+              };
+
+              // We need to render cells. 
+              // Optimization: We iterate through the timeGrid. 
+              // If a slot starts at the current interval, we render it with colspan.
+              // If we are currently "inside" a spanning slot, we skip rendering (or render hidden).
+              
+              const cells = [];
+              let skipCount = 0;
+
+              for (let i = 0; i < timeGrid.length; i++) {
+                if (skipCount > 0) {
+                    skipCount--;
+                    continue;
+                }
+
+                const interval = timeGrid[i];
+                
+                // Find slots that START exactly at this interval's start
+                // Note: This logic assumes slots align with the grid we generated (which they do by definition).
+                const slotsStartingHere = daySlots.filter(s => getMinutesFromTime(s.start_time) === interval.start);
+
+                if (slotsStartingHere.length > 0) {
+                    // Determine max duration among these slots to calculate colspan
+                    // If multiple slots start here, we assume they have the same duration or we take the max.
+                    // For side-by-side (duplicates), we render them in one cell.
+                    
+                    const maxEnd = Math.max(...slotsStartingHere.map(s => getMinutesFromTime(s.end_time)));
+                    
+                    // Calculate how many intervals this covers
+                    let span = 0;
+                    for (let j = i; j < timeGrid.length; j++) {
+                        if (timeGrid[j].end <= maxEnd) span++;
+                        else break;
+                    }
+                    
+                    // Update skip
+                    skipCount = span - 1;
+
+                    // Render the cell
+                    const color = getSubjectColor(slotsStartingHere[0].subject);
+                    
+                    cells.push(
+                        <td key={i} colSpan={span} className={`border border-gray-400 p-1 relative ${color.bg} align-top`}>
+                            <div className={`w-full h-full min-h-[80px] flex ${slotsStartingHere.length > 1 ? 'flex-row space-x-1' : 'flex-col'} justify-center items-center`}>
+                                {slotsStartingHere.map((slot, idx) => (
+                                    <div key={idx} className={`flex-1 flex flex-col items-center justify-center text-center w-full ${idx > 0 ? 'border-l border-gray-300 pl-1' : ''}`}>
+                                        <div className={`text-xl font-black ${color.text} leading-tight uppercase`}>
+                                            {slot.subject}
+                                        </div>
+                                        {slot.teacher && (
+                                            <div className="text-[10px] font-semibold text-gray-600 mt-1 bg-white/40 px-1 rounded">
+                                                {slot.teacher}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </td>
+                    );
+
+                } else {
+                    // Check if this interval is empty (no slot covers it)
+                    // We need to verify we aren't in the middle of a slot that started earlier (handled by skipCount)
+                    // So if we are here, it means it's a gap.
+                    
+                    // However, we must check if any slot is currently running that *didn't* start here?
+                    // Because of the 'skipCount' logic, we only enter this block if we are NOT inside a previously started slot.
+                    // So this is definitely an empty gap.
+                    cells.push(<td key={i} className="border border-gray-400 bg-white"></td>);
+                }
+              }
+
+              return (
+                <tr key={day}>
+                  <td className="border border-gray-400 p-4 font-black text-2xl text-center text-gray-800 bg-white h-24">
+                    {day.substring(0, 2)}
+                  </td>
+                  {cells}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="mt-4 text-[10px] text-gray-500 flex justify-between">
+         <span>Generated automatically by School Timetable System</span>
+         <span>{new Date().toLocaleDateString()}</span>
+      </div>
+    </div>
+  );
+};
+
+// Helper for pure minutes to "HH:MM"
+const formatMinToTime = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m.toString().padStart(2, '0')}`;
+};
