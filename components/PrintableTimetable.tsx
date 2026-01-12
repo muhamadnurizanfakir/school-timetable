@@ -58,12 +58,22 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
 
       {/* Header */}
       <div className="text-center mb-6 border-b-2 border-gray-800 pb-2">
-        <div className="flex items-center justify-center space-x-4">
-            <img 
-              src={displayLogo} 
-              alt="School Logo" 
-              className="h-20 w-auto object-contain" 
-            />
+        <div className="flex items-center justify-center space-x-6">
+            {/* 
+              Using object-contain to preserve aspect ratio. 
+              The block class ensures it behaves like a block element.
+            */}
+            {displayLogo && (
+              <img 
+                src={displayLogo} 
+                alt="School Logo" 
+                className="h-24 w-auto object-contain block"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            )}
             <div>
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase font-sans">{personName || 'TIMETABLE'}</h1>
                 <p className="text-gray-600 text-sm mt-1 uppercase tracking-widest">School Schedule • {new Date().getFullYear()}</p>
@@ -94,16 +104,6 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
             {DAYS.map((day) => {
               const daySlots = slots.filter((s) => s.day_of_week === day);
               
-              // Helper to find slots in a specific interval
-              const getSlotsInInterval = (start: number, end: number) => {
-                return daySlots.filter(s => {
-                    const sStart = getMinutesFromTime(s.start_time);
-                    const sEnd = getMinutesFromTime(s.end_time);
-                    // Check intersection
-                    return sStart < end && sEnd > start;
-                });
-              };
-
               const cells = [];
               let skipCount = 0;
 
