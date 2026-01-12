@@ -151,6 +151,28 @@ function App() {
     return grouped;
   }, [slots]);
 
+  // Helper to group slots that share the EXACT same time
+  const groupSlotsByTime = (daySlots: TimetableSlot[]) => {
+    const timeGroups: TimetableSlot[][] = [];
+    
+    daySlots.forEach(slot => {
+      const lastGroup = timeGroups[timeGroups.length - 1];
+      
+      if (lastGroup && lastGroup.length > 0) {
+        const lastSlot = lastGroup[0];
+        // Check if times match
+        if (lastSlot.start_time === slot.start_time && lastSlot.end_time === slot.end_time) {
+          lastGroup.push(slot);
+          return;
+        }
+      }
+      // Start new group
+      timeGroups.push([slot]);
+    });
+    
+    return timeGroups;
+  };
+
   // Handlers
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -233,30 +255,47 @@ function App() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {DAYS.map(day => (
-              <div key={day} className="flex flex-col">
-                <div className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-t-lg text-center uppercase tracking-wide text-sm mb-2">
-                  {day}
+            {DAYS.map(day => {
+              const daySlots = slotsByDay[day] || [];
+              // Group slots by time for side-by-side rendering
+              const timeGroups = groupSlotsByTime(daySlots);
+
+              return (
+                <div key={day} className="flex flex-col">
+                  <div className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-t-lg text-center uppercase tracking-wide text-sm mb-2">
+                    {day}
+                  </div>
+                  <div className="flex-1 space-y-2 min-h-[100px]">
+                    {timeGroups.length > 0 ? (
+                      timeGroups.map((group, groupIndex) => {
+                        const isMulti = group.length > 1;
+                        return (
+                          <div 
+                            key={groupIndex} 
+                            className={`w-full ${isMulti ? 'grid grid-cols-2 gap-2' : ''}`}
+                          >
+                            {group.map(slot => (
+                              <TimetableSlotCard
+                                key={slot.id}
+                                slot={slot}
+                                isAdmin={!!isAdmin}
+                                onEdit={handleEditSlot}
+                                onDelete={handleDeleteSlot}
+                                className="h-full" 
+                              />
+                            ))}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-6 text-gray-400 text-sm">
+                        No classes
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 space-y-3 min-h-[100px]">
-                  {slotsByDay[day]?.length > 0 ? (
-                    slotsByDay[day].map(slot => (
-                      <TimetableSlotCard
-                        key={slot.id}
-                        slot={slot}
-                        isAdmin={!!isAdmin}
-                        onEdit={handleEditSlot}
-                        onDelete={handleDeleteSlot}
-                      />
-                    ))
-                  ) : (
-                    <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-6 text-gray-400 text-sm">
-                      No classes
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
