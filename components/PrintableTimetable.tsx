@@ -57,7 +57,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
       </style>
 
       {/* Header */}
-      <div className="text-center mb-6 border-b-2 border-gray-900 pb-2">
+      <div className="text-center mb-6 border-b-2 border-black pb-2">
         <div className="flex items-center justify-center space-x-6">
             {/* 
               Using object-contain to preserve aspect ratio. 
@@ -82,15 +82,15 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
       </div>
 
       {/* Timetable Grid */}
-      <div className="w-full border-2 border-gray-900 rounded-sm overflow-hidden">
+      <div className="w-full border-2 border-black rounded-sm overflow-hidden">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-900 p-2 w-20 text-center font-bold text-gray-800 bg-gray-200">
+              <th className="border border-black p-2 w-20 text-center font-bold text-gray-800 bg-gray-200">
                 DAY
               </th>
               {timeGrid.map((interval, idx) => (
-                <th key={idx} className="border border-gray-900 p-1 text-[10px] text-center font-medium text-gray-800 w-24 h-12 bg-gray-50">
+                <th key={idx} className="border border-black p-1 text-[10px] text-center font-medium text-gray-800 w-24 h-12 bg-gray-50">
                   <div className="flex flex-col justify-center h-full">
                      <span>{formatMinToTime(interval.start)}</span>
                      <span className="text-gray-400 text-[8px]">-</span>
@@ -134,16 +134,21 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                     const color = getSubjectColor(slotsStartingHere[0].subject);
                     const isMulti = slotsStartingHere.length > 1;
                     
+                    // Note on Styling:
+                    // 1. We put the border on the td.
+                    // 2. We put the background on the inner div.
+                    // 3. We use `h-[1px]` on td to force the table-cell to allow 100% height child expansion.
+                    // This ensures the background color (inner div) doesn't overlap the border (td),
+                    // and the border remains visible in print.
                     cells.push(
-                        <td key={i} colSpan={span} className={`border border-gray-900 p-0 relative ${color.bg} align-top`}>
-                            {/* Flex-col ensures vertical stacking of items */}
-                            <div className={`w-full h-full min-h-[80px] flex flex-col justify-center items-center`}>
+                        <td key={i} colSpan={span} className="border border-black p-0 align-top h-[1px]">
+                            <div className={`w-full h-full min-h-[80px] flex flex-col justify-center items-center ${color.bg}`}>
                                 {slotsStartingHere.map((slot, idx) => (
                                     <div 
                                       key={idx} 
                                       className={`
                                         flex-1 flex flex-col items-center justify-center text-center w-full p-1
-                                        ${isMulti && idx > 0 ? 'border-t border-gray-900' : ''}
+                                        ${isMulti && idx > 0 ? 'border-t border-black' : ''}
                                       `}
                                     >
                                         <div className={`
@@ -164,13 +169,13 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                     );
 
                 } else {
-                    cells.push(<td key={i} className="border border-gray-900 bg-white"></td>);
+                    cells.push(<td key={i} className="border border-black bg-white"></td>);
                 }
               }
 
               return (
                 <tr key={day}>
-                  <td className="border border-gray-900 p-4 font-black text-2xl text-center text-gray-800 bg-white h-24">
+                  <td className="border border-black p-4 font-black text-2xl text-center text-gray-800 bg-white h-24">
                     {day.substring(0, 2)}
                   </td>
                   {cells}
