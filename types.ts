@@ -6,6 +6,7 @@ export interface Person {
   id: string;
   name: string;
   description?: string;
+  logo_url?: string;
   created_at?: string;
 }
 
