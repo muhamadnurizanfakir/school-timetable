@@ -6,6 +6,7 @@ import { TimetableSlotCard } from './components/TimetableSlotCard';
 import { SlotEditor } from './components/SlotEditor';
 import { Button } from './components/Button';
 import { PrintableTimetable } from './components/PrintableTimetable';
+import { LandingPage } from './components/LandingPage';
 
 function App() {
   const [persons, setPersons] = useState<Person[]>([]);
@@ -107,17 +108,11 @@ function App() {
       const { data, error } = await supabase.from('persons').select('*').order('name');
       if (error) {
          console.error('Error loading persons:', error);
-         setLoading(false);
       } else if (data) {
         setPersons(data);
-        // Default selection logic: ADEEB RAZIN or first available
-        const defaultPerson = data.find(p => p.name.toUpperCase() === 'ADEEB RAZIN');
-        if (defaultPerson) setSelectedPersonId(defaultPerson.id);
-        else if (data.length > 0) setSelectedPersonId(data[0].id);
-        setLoading(false);
-      } else {
-        setLoading(false);
+        // Removed auto-selection to show Landing Page by default
       }
+      setLoading(false);
     };
 
     fetchPersons();
@@ -127,7 +122,10 @@ function App() {
 
   // 2. Fetch Slots when Person Changes & Realtime Subscription
   useEffect(() => {
-    if (!selectedPersonId || !isConfigured) return;
+    if (!selectedPersonId || !isConfigured) {
+      setSlots([]); // Clear slots if no person selected
+      return;
+    }
 
     const fetchSlots = async () => {
       const { data, error } = await supabase
@@ -228,10 +226,6 @@ function App() {
     window.print();
   };
 
-  if (loading && isConfigured) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-indigo-600 font-medium">Loading Timetable...</div>;
-  }
-
   return (
     <>
       {/* --- Main App (Hidden on Print) --- */}
@@ -240,45 +234,68 @@ function App() {
         <header className="bg-white shadow-sm sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Home Button (Visible only when a person is selected) */}
+              {selectedPersonId && (
+                <button
+                  onClick={() => setSelectedPersonId('')}
+                  className="p-2 -ml-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-full transition-colors mr-2"
+                  title="Back to Home"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                    <path d="M11.47 3.841a.75.75 0 011.06 0l8.632 8.632a.75.75 0 01-1.06 1.06l-.912-.912v9.128a2.25 2.25 0 01-2.25 2.25H7.06a2.25 2.25 0 01-2.25-2.25V12.62l-.912.913a.75.75 0 01-1.06-1.06L11.47 3.84z" />
+                  </svg>
+                </button>
+              )}
+
               <div className="flex flex-col">
-                <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">School Timetable</h1>
-                <span className="text-xs text-gray-500 hidden sm:block">Realtime Updates</span>
+                <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">
+                  {selectedPerson ? selectedPerson.name : 'School Timetable'}
+                </h1>
+                <span className="text-xs text-gray-500 hidden sm:block">
+                  {selectedPerson ? 'Weekly Schedule' : 'Dashboard'}
+                </span>
               </div>
               
-              {/* Person Selector */}
-              <div className="relative">
-                <select
-                  value={selectedPersonId}
-                  onChange={(e) => setSelectedPersonId(e.target.value)}
-                  className="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 py-2 pl-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium"
-                >
-                  {persons.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              {/* Person Selector (Only show if a person is already selected for quick switching) */}
+              {selectedPersonId && (
+                <div className="relative ml-4">
+                  <select
+                    value={selectedPersonId}
+                    onChange={(e) => setSelectedPersonId(e.target.value)}
+                    className="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 py-1.5 pl-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium text-sm"
+                  >
+                    {persons.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-3">
-              <button 
-                onClick={handlePrint}
-                className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors"
-                title="Print Timetable"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
-                </svg>
-              </button>
+              {selectedPersonId && (
+                <button 
+                  onClick={handlePrint}
+                  className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors"
+                  title="Print Timetable"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+                  </svg>
+                </button>
+              )}
 
               {isAdmin ? (
                 <div className="flex items-center space-x-2">
                   <span className="text-xs text-gray-500 hidden sm:inline mr-2">Admin Mode</span>
-                  <Button variant="primary" onClick={handleAddSlot} className="text-sm">
-                    + Add Slot
-                  </Button>
+                  {selectedPersonId && (
+                    <Button variant="primary" onClick={handleAddSlot} className="text-sm">
+                      + Add Slot
+                    </Button>
+                  )}
                   <button onClick={handleLogout} className="text-gray-500 hover:text-red-600 p-2">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                   </button>
@@ -295,9 +312,11 @@ function App() {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {!selectedPersonId ? (
-            <div className="text-center py-20 text-gray-500">
-              No active schedules found. Admin needs to set up Persons.
-            </div>
+            <LandingPage 
+              persons={persons} 
+              onSelectPerson={setSelectedPersonId} 
+              loading={loading} 
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               {DAYS.map(day => {
@@ -363,13 +382,15 @@ function App() {
           Use h-0 overflow-hidden instead of display:none (hidden) to ensure images 
           are loaded by the browser even before the print dialog opens.
       */}
-      <div className="h-0 overflow-hidden print:h-auto print:overflow-visible">
-        <PrintableTimetable 
-          slots={slots} 
-          personName={selectedPerson?.name || ''} 
-          logoUrl={currentLogoUrl}
-        />
-      </div>
+      {selectedPersonId && (
+        <div className="h-0 overflow-hidden print:h-auto print:overflow-visible">
+          <PrintableTimetable 
+            slots={slots} 
+            personName={selectedPerson?.name || ''} 
+            logoUrl={currentLogoUrl}
+          />
+        </div>
+      )}
     </>
   );
 }
