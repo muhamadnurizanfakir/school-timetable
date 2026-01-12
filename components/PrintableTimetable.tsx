@@ -4,9 +4,10 @@ import { TimetableSlot, DAYS, getSubjectColor, getMinutesFromTime, formatTime } 
 interface PrintableTimetableProps {
   slots: TimetableSlot[];
   personName: string;
+  logoUrl?: string;
 }
 
-export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, personName }) => {
+export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, personName, logoUrl }) => {
   // 1. Calculate the Time Grid
   // We need to find every unique start and end time to create our grid columns.
   const timeGrid = useMemo(() => {
@@ -35,6 +36,9 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
     return intervals;
   }, [slots]);
 
+  // Default logo if none provided
+  const displayLogo = logoUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png';
+
   return (
     <div className="w-full bg-white p-4">
       <style>
@@ -55,7 +59,11 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
       {/* Header */}
       <div className="text-center mb-6 border-b-2 border-gray-800 pb-2">
         <div className="flex items-center justify-center space-x-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png" alt="Logo" className="h-16 w-auto opacity-80" />
+            <img 
+              src={displayLogo} 
+              alt="School Logo" 
+              className="h-20 w-auto object-contain" 
+            />
             <div>
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase font-sans">{personName || 'TIMETABLE'}</h1>
                 <p className="text-gray-600 text-sm mt-1 uppercase tracking-widest">School Schedule • {new Date().getFullYear()}</p>
@@ -96,11 +104,6 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                 });
               };
 
-              // We need to render cells. 
-              // Optimization: We iterate through the timeGrid. 
-              // If a slot starts at the current interval, we render it with colspan.
-              // If we are currently "inside" a spanning slot, we skip rendering (or render hidden).
-              
               const cells = [];
               let skipCount = 0;
 
@@ -113,14 +116,9 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                 const interval = timeGrid[i];
                 
                 // Find slots that START exactly at this interval's start
-                // Note: This logic assumes slots align with the grid we generated (which they do by definition).
                 const slotsStartingHere = daySlots.filter(s => getMinutesFromTime(s.start_time) === interval.start);
 
                 if (slotsStartingHere.length > 0) {
-                    // Determine max duration among these slots to calculate colspan
-                    // If multiple slots start here, we assume they have the same duration or we take the max.
-                    // For side-by-side (duplicates), we render them in one cell.
-                    
                     const maxEnd = Math.max(...slotsStartingHere.map(s => getMinutesFromTime(s.end_time)));
                     
                     // Calculate how many intervals this covers
@@ -130,7 +128,6 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                         else break;
                     }
                     
-                    // Update skip
                     skipCount = span - 1;
 
                     // Render the cell
@@ -156,13 +153,6 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                     );
 
                 } else {
-                    // Check if this interval is empty (no slot covers it)
-                    // We need to verify we aren't in the middle of a slot that started earlier (handled by skipCount)
-                    // So if we are here, it means it's a gap.
-                    
-                    // However, we must check if any slot is currently running that *didn't* start here?
-                    // Because of the 'skipCount' logic, we only enter this block if we are NOT inside a previously started slot.
-                    // So this is definitely an empty gap.
                     cells.push(<td key={i} className="border border-gray-400 bg-white"></td>);
                 }
               }
