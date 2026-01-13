@@ -1,89 +1,406 @@
-import React from 'react';
-import { Person } from '../types';
+import React, { useEffect, useState, useMemo } from 'react';
+import { supabase, isConfigured } from './services/supabase';
+import { Person, TimetableSlot, DAYS, getMinutesFromTime } from './types';
+import { AuthModal } from './components/AuthModal';
+import { TimetableSlotCard } from './components/TimetableSlotCard';
+import { SlotEditor } from './components/SlotEditor';
+import { Button } from './components/Button';
+import { PrintableTimetable } from './components/PrintableTimetable';
+import { LandingPage } from './components/LandingPage';
 
-interface LandingPageProps {
-  persons: Person[];
-  onSelectPerson: (personId: string) => void;
-  loading: boolean;
-}
+function App() {
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [selectedPersonId, setSelectedPersonId] = useState<string>('');
+  const [slots, setSlots] = useState<TimetableSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Auth State
+  // Initialize with null to avoid Promise issues during render
+  const [session, setSession] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
+  // Editor State
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingSlot, setEditingSlot] = useState<TimetableSlot | null>(null);
 
-export const LandingPage: React.FC<LandingPageProps> = ({ persons, onSelectPerson, loading }) => {
-  // Helper to determine logo (mirroring logic from App.tsx for consistency)
-  const getLogo = (person: Person) => {
-    if (person.logo_url) return person.logo_url;
-    const name = person.name.toUpperCase();
+  const isAdmin = useMemo(() => {
+    return !!session;
+  }, [session]);
+
+  const selectedPerson = useMemo(() => {
+    return persons.find(p => p.id === selectedPersonId);
+  }, [persons, selectedPersonId]);
+
+  // Determine Logo URL
+  const currentLogoUrl = useMemo(() => {
+    if (!selectedPerson) return undefined;
+    
+    // 1. If database has the URL, use it
+    if (selectedPerson.logo_url) return selectedPerson.logo_url;
+
+    // 2. Fallback hardcoded logic based on user request
+    const name = selectedPerson.name.toUpperCase();
+    
+    // Akif Rifqi Logo
     if (name.includes('AKIF')) {
       return 'https://mrgjokwsphsgxekkwhdb.supabase.co/storage/v1/object/sign/logo/sks7.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mZWRhMDhkZi1kMWQ0LTQyMmEtYWQzYi05ZGQzNjEwOTIzMTEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL3NrczcucG5nIiwiaWF0IjoxNzY4MTk4MDg5LCJleHAiOjMzNDQ5OTgwODl9.2cA2tivxT7DjKMMTHqBlxDlYCqy1zB9uT2mraX-wj3c';
     }
+    
+    // Adeeb Razin and Khadijah Logo
     if (name.includes('ADEEB') || name.includes('KHADIJAH')) {
       return 'https://mrgjokwsphsgxekkwhdb.supabase.co/storage/v1/object/sign/logo/smksgramal.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mZWRhMDhkZi1kMWQ0LTQyMmEtYWQzYi05ZGQzNjEwOTIzMTEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL3Nta3NncmFtYWwucG5nIiwiaWF0IjoxNzY4MTk4MTY2LCJleHAiOjMzNDQ5OTgxNjZ9.QRAAPemCubDjrSlq_moLMTrKnN1Ol6DNx0L0JOHckK8';
     }
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png';
-  };
 
-  if (loading) {
+    // Default fallback
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png';
+  }, [selectedPerson]);
+
+  // If credentials are missing, show the setup screen immediately
+  if (!isConfigured) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        <p className="text-gray-500 font-medium">Loading schedules...</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full text-center">
+          <div className="mb-6 flex justify-center">
+            <svg className="w-16 h-16 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Setup Required</h1>
+          <p className="text-gray-600 mb-6">
+            The application is running, but it's not connected to Supabase yet.
+          </p>
+          
+          <div className="text-left bg-gray-100 p-4 rounded-md mb-6 font-mono text-sm overflow-x-auto">
+            <p className="font-bold text-gray-700 mb-2">Status:</p>
+            <p className="text-red-600">❌ Missing Environment Variables</p>
+            <p className="text-gray-500 mt-1">VITE_SUPABASE_URL</p>
+            <p className="text-gray-500">VITE_SUPABASE_ANON_KEY</p>
+          </div>
+
+          <div className="space-y-4 text-left">
+            <h3 className="font-bold text-gray-800">Next Steps:</h3>
+            <ol className="list-decimal pl-5 space-y-2 text-gray-700">
+              <li>Complete the Supabase setup.</li>
+              <li>Add the environment variables to your Vercel project settings.</li>
+              <li>Redeploy or restart the application.</li>
+            </ol>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // 1. Initial Data Fetch & Auth Listener
+  useEffect(() => {
+    // Auth Listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    // Fetch Persons
+    const fetchPersons = async () => {
+      if (!isConfigured) return;
+      
+      const { data, error } = await supabase.from('persons').select('*').order('name');
+      if (error) {
+         console.error('Error loading persons:', error);
+      } else if (data) {
+        setPersons(data);
+        // Removed auto-selection to show Landing Page by default
+      }
+      setLoading(false);
+    };
+
+    fetchPersons();
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // 2. Fetch Slots when Person Changes & Realtime Subscription
+  useEffect(() => {
+    if (!selectedPersonId || !isConfigured) {
+      setSlots([]); // Clear slots if no person selected
+      return;
+    }
+
+    const fetchSlots = async () => {
+      const { data, error } = await supabase
+        .from('timetable_slots')
+        .select('*')
+        .eq('person_id', selectedPersonId);
+      
+      if (error) console.error('Error fetching slots:', error);
+      else setSlots(data || []);
+    };
+
+    fetchSlots();
+
+    // Realtime Subscription
+    const channel = supabase
+      .channel('timetable_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'timetable_slots',
+          filter: `person_id=eq.${selectedPersonId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setSlots(prev => [...prev, payload.new as TimetableSlot]);
+          } else if (payload.eventType === 'DELETE') {
+            setSlots(prev => prev.filter(slot => slot.id !== payload.old.id));
+          } else if (payload.eventType === 'UPDATE') {
+            setSlots(prev => prev.map(slot => slot.id === payload.new.id ? payload.new as TimetableSlot : slot));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedPersonId]);
+
+  // 3. Derived State: Group slots by Day
+  const slotsByDay = useMemo(() => {
+    const grouped: Record<string, TimetableSlot[]> = {};
+    DAYS.forEach(day => {
+      grouped[day] = slots
+        .filter(s => s.day_of_week === day)
+        .sort((a, b) => getMinutesFromTime(a.start_time) - getMinutesFromTime(b.start_time));
+    });
+    return grouped;
+  }, [slots]);
+
+  // Helper to group slots that share the EXACT same time
+  const groupSlotsByTime = (daySlots: TimetableSlot[]) => {
+    const timeGroups: TimetableSlot[][] = [];
+    
+    daySlots.forEach(slot => {
+      const lastGroup = timeGroups[timeGroups.length - 1];
+      
+      if (lastGroup && lastGroup.length > 0) {
+        const lastSlot = lastGroup[0];
+        // Check if times match
+        if (lastSlot.start_time === slot.start_time && lastSlot.end_time === slot.end_time) {
+          lastGroup.push(slot);
+          return;
+        }
+      }
+      // Start new group
+      timeGroups.push([slot]);
+    });
+    
+    return timeGroups;
+  };
+
+  // Handlers
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
+
+  const handleDeleteSlot = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this slot?')) return;
+    const { error } = await supabase.from('timetable_slots').delete().eq('id', id);
+    if (error) alert('Error deleting slot');
+  };
+
+  const handleEditSlot = (slot: TimetableSlot) => {
+    setEditingSlot(slot);
+    setIsEditorOpen(true);
+  };
+
+  const handleAddSlot = () => {
+    setEditingSlot(null);
+    setIsEditorOpen(true);
+  };
+  
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">
-          School Timetable Portal
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Select a student below to view their weekly class timetable.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {persons.map((person) => (
-          <button
-            key={person.id}
-            onClick={() => onSelectPerson(person.id)}
-            className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 ease-in-out border border-gray-100 overflow-hidden text-center flex flex-col h-64 transform hover:-translate-y-1"
-          >
-            <div className="flex-1 flex items-center justify-center bg-gray-50 p-6 group-hover:bg-indigo-50/30 transition-colors">
-              <img
-                src={getLogo(person)}
-                alt={`${person.name} logo`}
-                className="h-32 w-auto object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-            <div className="p-6 border-t border-gray-100 bg-white relative flex flex-col items-center justify-center">
-              <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                {person.name}
-              </h3>
-              {person.class_name && (
-                <p className="text-sm text-gray-500 font-bold mt-1 uppercase tracking-wider">
-                  {person.class_name}
-                </p>
+    <>
+      {/* --- Main App (Hidden on Print) --- */}
+      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans print:hidden">
+        {/* Header */}
+        <header className="bg-white shadow-sm sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Home Button (Visible only when a person is selected) */}
+              {selectedPersonId && (
+                <button
+                  onClick={() => setSelectedPersonId('')}
+                  className="p-2 -ml-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-full transition-colors mr-2"
+                  title="Back to Home"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                    <path d="M11.47 3.841a.75.75 0 011.06 0l8.632 8.632a.75.75 0 01-1.06 1.06l-.912-.912v9.128a2.25 2.25 0 01-2.25 2.25H7.06a2.25 2.25 0 01-2.25-2.25V12.62l-.912.913a.75.75 0 01-1.06-1.06L11.47 3.84z" />
+                  </svg>
+                </button>
               )}
-              {/* Optional: Simple arrow indicator that stays on the right, or could be removed for pure centering */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+
+              <div className="flex flex-col">
+                <div className="flex items-baseline space-x-2">
+                    <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">
+                      {selectedPerson ? selectedPerson.name : 'School Timetable'}
+                    </h1>
+                    {selectedPerson?.class_name && (
+                        <span className="text-sm font-semibold text-gray-500 uppercase hidden sm:block">
+                            • {selectedPerson.class_name}
+                        </span>
+                    )}
+                </div>
+                <span className="text-xs text-gray-500 hidden sm:block">
+                  {selectedPerson ? 'Weekly Timetable' : 'Dashboard'}
+                </span>
               </div>
+              
+              {/* Person Selector (Only show if a person is already selected for quick switching) */}
+              {selectedPersonId && (
+                <div className="relative ml-4">
+                  <select
+                    value={selectedPersonId}
+                    onChange={(e) => setSelectedPersonId(e.target.value)}
+                    className="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 py-1.5 pl-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium text-sm"
+                  >
+                    {persons.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  </div>
+                </div>
+              )}
             </div>
-          </button>
-        ))}
+
+            <div className="flex items-center space-x-3">
+              {selectedPersonId && (
+                <button 
+                  onClick={handlePrint}
+                  className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors"
+                  title="Print Timetable"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+                  </svg>
+                </button>
+              )}
+
+              {isAdmin ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500 hidden sm:inline mr-2">Admin Mode</span>
+                  {selectedPersonId && (
+                    <Button variant="primary" onClick={handleAddSlot} className="text-sm">
+                      + Add Slot
+                    </Button>
+                  )}
+                  <button onClick={handleLogout} className="text-gray-500 hover:text-red-600 p-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsAuthModalOpen(true)} className="text-sm text-indigo-600 font-medium hover:text-indigo-800">
+                  Admin Login
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {!selectedPersonId ? (
+            <LandingPage 
+              persons={persons} 
+              onSelectPerson={setSelectedPersonId} 
+              loading={loading} 
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              {DAYS.map(day => {
+                const daySlots = slotsByDay[day] || [];
+                // Group slots by time for side-by-side rendering
+                const timeGroups = groupSlotsByTime(daySlots);
+
+                return (
+                  <div key={day} className="flex flex-col">
+                    <div className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-t-lg text-center uppercase tracking-wide text-sm mb-2">
+                      {day}
+                    </div>
+                    <div className="flex-1 space-y-2 min-h-[100px]">
+                      {timeGroups.length > 0 ? (
+                        timeGroups.map((group, groupIndex) => {
+                          const isMulti = group.length > 1;
+                          return (
+                            <div 
+                              key={groupIndex} 
+                              className={`w-full ${isMulti ? 'grid grid-cols-2 gap-2' : ''}`}
+                            >
+                              {group.map(slot => (
+                                <TimetableSlotCard
+                                  key={slot.id}
+                                  slot={slot}
+                                  isAdmin={!!isAdmin}
+                                  onEdit={handleEditSlot}
+                                  onDelete={handleDeleteSlot}
+                                  className="h-full" 
+                                />
+                              ))}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-6 text-gray-400 text-sm">
+                          No classes
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+
+        {/* Modals */}
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+        
+        {isEditorOpen && selectedPersonId && (
+          <SlotEditor 
+            isOpen={isEditorOpen}
+            onClose={() => setIsEditorOpen(false)}
+            personId={selectedPersonId}
+            initialData={editingSlot}
+          />
+        )}
       </div>
 
-      {persons.length === 0 && !loading && (
-        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No students found</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by creating a new person in the database.</p>
+      {/* --- Printable View (Visible only on Print) --- */}
+      {/* 
+          Use h-0 overflow-hidden instead of display:none (hidden) to ensure images 
+          are loaded by the browser even before the print dialog opens.
+      */}
+      {selectedPersonId && (
+        <div className="h-0 overflow-hidden print:h-auto print:overflow-visible">
+          <PrintableTimetable 
+            slots={slots} 
+            personName={selectedPerson?.name || ''} 
+            className={selectedPerson?.class_name}
+            logoUrl={currentLogoUrl}
+          />
         </div>
       )}
-    </div>
+    </>
   );
-};
+}
+
+export default App;
