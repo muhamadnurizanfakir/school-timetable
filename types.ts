@@ -5,6 +5,7 @@ export const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 
 export interface Person {
   id: string;
   name: string;
+  class_name?: string;
   description?: string;
   logo_url?: string;
   created_at?: string;
