@@ -8,6 +8,7 @@ export interface Person {
   class_name?: string;
   description?: string;
   logo_url?: string;
+  is_visible?: boolean; // New field for visibility control
   created_at?: string;
 }
 
