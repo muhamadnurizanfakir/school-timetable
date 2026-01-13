@@ -46,7 +46,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ persons, onSelectPerso
           <button
             key={person.id}
             onClick={() => onSelectPerson(person.id)}
-            className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 ease-in-out border border-gray-100 overflow-hidden text-left flex flex-col h-64 transform hover:-translate-y-1"
+            className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 ease-in-out border border-gray-100 overflow-hidden text-center flex flex-col h-64 transform hover:-translate-y-1"
           >
             <div className="flex-1 flex items-center justify-center bg-gray-50 p-6 group-hover:bg-indigo-50/30 transition-colors">
               <img
@@ -55,13 +55,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ persons, onSelectPerso
                 className="h-32 w-auto object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
               />
             </div>
-            <div className="p-6 border-t border-gray-100 bg-white relative">
+            <div className="p-6 border-t border-gray-100 bg-white relative flex items-center justify-center">
               <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
                 {person.name}
               </h3>
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              {/* Optional: Simple arrow indicator that stays on the right, or could be removed for pure centering */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
             </div>
