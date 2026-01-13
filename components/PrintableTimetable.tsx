@@ -37,6 +37,15 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
     return intervals;
   }, [slots]);
 
+  // Format Date as DD-MMM-YYYY (e.g., 24-FEB-2025)
+  const formattedDate = useMemo(() => {
+    const date = new Date();
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }, []);
+
   // Default logo if none provided
   const displayLogo = logoUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Emblem_of_Malaysia.svg/244px-Emblem_of_Malaysia.svg.png';
 
@@ -82,7 +91,9 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
                         {className}
                     </h2>
                 )}
-                <p className="text-gray-600 text-sm mt-1 uppercase tracking-widest">School Schedule • {new Date().getFullYear()}</p>
+                <p className="text-gray-600 text-sm mt-1 uppercase tracking-widest font-bold">
+                  SCHOOL TIMETABLE • {formattedDate}
+                </p>
             </div>
         </div>
       </div>
@@ -194,7 +205,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
       
       <div className="mt-4 text-[10px] text-gray-500 flex justify-between">
          <span>Generated automatically by School Timetable System</span>
-         <span>{new Date().toLocaleDateString()}</span>
+         <span>{formattedDate}</span>
       </div>
     </div>
   );
