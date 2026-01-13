@@ -55,10 +55,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ persons, onSelectPerso
                 className="h-32 w-auto object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
               />
             </div>
-            <div className="p-6 border-t border-gray-100 bg-white relative flex items-center justify-center">
+            <div className="p-6 border-t border-gray-100 bg-white relative flex flex-col items-center justify-center">
               <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
                 {person.name}
               </h3>
+              {person.class_name && (
+                <p className="text-sm text-gray-500 font-bold mt-1 uppercase tracking-wider">
+                  {person.class_name}
+                </p>
+              )}
               {/* Optional: Simple arrow indicator that stays on the right, or could be removed for pure centering */}
               <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
