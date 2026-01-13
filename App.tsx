@@ -27,6 +27,16 @@ function App() {
     return !!session;
   }, [session]);
 
+  // Derived state for visibility logic
+  const visiblePersons = useMemo(() => {
+    // If Admin, show all (so they can edit hidden schedules)
+    if (isAdmin) return persons;
+    
+    // If Public, hide those where is_visible is explicitly false
+    // (Treat undefined/null as true for backward compatibility)
+    return persons.filter(p => p.is_visible !== false);
+  }, [persons, isAdmin]);
+
   const selectedPerson = useMemo(() => {
     return persons.find(p => p.id === selectedPersonId);
   }, [persons, selectedPersonId]);
@@ -259,7 +269,7 @@ function App() {
                     )}
                 </div>
                 <span className="text-xs text-gray-500 hidden sm:block">
-                  {selectedPerson ? 'Weekly Schedule' : 'Dashboard'}
+                  {selectedPerson ? 'Weekly Timetable' : 'Dashboard'}
                 </span>
               </div>
               
@@ -271,8 +281,10 @@ function App() {
                     onChange={(e) => setSelectedPersonId(e.target.value)}
                     className="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 py-1.5 pl-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium text-sm"
                   >
-                    {persons.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+                    {visiblePersons.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} {p.is_visible === false ? '(Hidden)' : ''}
+                      </option>
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
@@ -320,7 +332,7 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {!selectedPersonId ? (
             <LandingPage 
-              persons={persons} 
+              persons={visiblePersons} 
               onSelectPerson={setSelectedPersonId} 
               loading={loading} 
             />
