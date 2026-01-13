@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ persons, onSelectPerso
           School Timetable Portal
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Select a student below to view their weekly class schedule.
+          Select a student below to view their weekly class timetable.
         </p>
       </div>
 
