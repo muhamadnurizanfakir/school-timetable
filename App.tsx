@@ -248,9 +248,16 @@ function App() {
               )}
 
               <div className="flex flex-col">
-                <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">
-                  {selectedPerson ? selectedPerson.name : 'School Timetable'}
-                </h1>
+                <div className="flex items-baseline space-x-2">
+                    <h1 className="text-xl font-bold text-indigo-600 hidden sm:block">
+                      {selectedPerson ? selectedPerson.name : 'School Timetable'}
+                    </h1>
+                    {selectedPerson?.class_name && (
+                        <span className="text-sm font-semibold text-gray-500 uppercase hidden sm:block">
+                            • {selectedPerson.class_name}
+                        </span>
+                    )}
+                </div>
                 <span className="text-xs text-gray-500 hidden sm:block">
                   {selectedPerson ? 'Weekly Schedule' : 'Dashboard'}
                 </span>
@@ -387,6 +394,7 @@ function App() {
           <PrintableTimetable 
             slots={slots} 
             personName={selectedPerson?.name || ''} 
+            className={selectedPerson?.class_name}
             logoUrl={currentLogoUrl}
           />
         </div>
