@@ -6,7 +6,7 @@ A modern, responsive, realtime timetable application built with React, Tailwind 
 - **Public Access**: View timetables without login. Switch between students/classes.
 - **Admin Access**: Authenticated editing of slots via Supabase Auth.
 - **Realtime**: Updates populate instantly across all devices.
-- **Mobile First**: Optimized card layout for phones, grid for desktops.
+- **Visibility Control**: Admins can hide/show specific students via Supabase dashboard.
 
 ## Setup Instructions
 
@@ -19,6 +19,7 @@ If you prefer not to use SQL scripts, follow these steps:
    - `id` (uuid, Primary Key, default: `gen_random_uuid()`)
    - `name` (text)
    - `class_name` (text, nullable)
+   - `is_visible` (boolean, default: `true`, nullable)
    - Enable RLS.
 3. Create `timetable_slots`:
    - `id` (uuid, Primary Key, default: `gen_random_uuid()`)
@@ -42,6 +43,7 @@ If you prefer not to use SQL scripts, follow these steps:
 **D. Add Data**
 1. Go to **Table Editor** -> `persons`.
 2. Add rows for: `ADEEB RAZIN` (Class: 5 Dedikasi), `AKIF RIFQI` (Class: 1 Arif), `KHADIJAH`.
+3. Use the `is_visible` column to control if a student appears on the public dashboard (TRUE = Show, FALSE = Hide).
 
 ### 2. Local Development
 1. Clone the repo.
@@ -78,4 +80,5 @@ If you prefer not to use SQL scripts, follow these steps:
 3. Once logged in:
    - **Add Slot**: Click the "+ Add Slot" button.
    - **Edit/Delete**: Use controls on the cards.
+   - **Visibility**: Hidden students will appear in the dropdown marked as `(Hidden)`. Use the Supabase Dashboard to toggle the `is_visible` flag.
    - **Manage Persons**: Use the Supabase Dashboard to add/edit student names and class names.
