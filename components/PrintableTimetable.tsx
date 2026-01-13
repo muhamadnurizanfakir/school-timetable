@@ -4,10 +4,11 @@ import { TimetableSlot, DAYS, getSubjectColor, getMinutesFromTime, formatTime } 
 interface PrintableTimetableProps {
   slots: TimetableSlot[];
   personName: string;
+  className?: string;
   logoUrl?: string;
 }
 
-export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, personName, logoUrl }) => {
+export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, personName, className, logoUrl }) => {
   // 1. Calculate the Time Grid
   // We need to find every unique start and end time to create our grid columns.
   const timeGrid = useMemo(() => {
@@ -76,6 +77,11 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ slots, p
             )}
             <div>
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase font-sans">{personName || 'TIMETABLE'}</h1>
+                {className && (
+                    <h2 className="text-xl font-bold text-gray-700 uppercase tracking-widest mt-1">
+                        {className}
+                    </h2>
+                )}
                 <p className="text-gray-600 text-sm mt-1 uppercase tracking-widest">School Schedule • {new Date().getFullYear()}</p>
             </div>
         </div>
