@@ -10,15 +10,38 @@ A modern, responsive, realtime timetable application built with React, Tailwind 
 
 ## Setup Instructions
 
-### 1. Supabase Setup
-1. Create a new project at [Supabase.com](https://supabase.com).
-2. Go to the **SQL Editor** in the left sidebar.
-3. Copy the content of `supabase_schema.sql` from this project and run it.
-4. Go to **Authentication** -> **Providers** and ensure "Email" is enabled.
-5. Go to **Authentication** -> **Users** and "Invite User" (this will be your admin).
-   - Enter your email and a password you will remember.
-   - *Note: Since we are using basic Auth, you can just sign up manually or create the user here.*
-6. Go to **Database** -> **Replication**. Ensure the `supabase_realtime` publication includes the `timetable_slots` table. (The SQL script attempts this, but verifying in UI is safer).
+### 1. Supabase Setup (Manual Method)
+If you prefer not to use SQL scripts, follow these steps:
+
+**A. Create Tables**
+1. Go to **Table Editor** -> **New Table**.
+2. Create `persons`:
+   - `id` (uuid, Primary Key, default: `gen_random_uuid()`)
+   - `name` (text)
+   - `class_name` (text, nullable)
+   - Enable RLS.
+3. Create `timetable_slots`:
+   - `id` (uuid, Primary Key, default: `gen_random_uuid()`)
+   - `person_id` (uuid, Foreign Key to `persons.id`, Action: Cascade)
+   - `day_of_week` (text)
+   - `start_time` (text)
+   - `end_time` (text)
+   - `subject` (text)
+   - `teacher` (text)
+   - Enable RLS.
+
+**B. Set Permissions (RLS)**
+1. Go to **Authentication** -> **Policies**.
+2. For both tables, add a policy for **SELECT** allowing `true` (Public read).
+3. For both tables, add a policy for **ALL** allowing `auth.role() = 'authenticated'` (Admin write).
+
+**C. Enable Realtime**
+1. Go to **Database** -> **Publications**.
+2. Select `supabase_realtime` and ensure `timetable_slots` is checked.
+
+**D. Add Data**
+1. Go to **Table Editor** -> `persons`.
+2. Add rows for: `ADEEB RAZIN` (Class: 5 Dedikasi), `AKIF RIFQI` (Class: 1 Arif), `KHADIJAH`.
 
 ### 2. Local Development
 1. Clone the repo.
@@ -46,19 +69,13 @@ A modern, responsive, realtime timetable application built with React, Tailwind 
 
 ### For Public Users
 1. Open the website.
-2. Use the dropdown at the top right (top center on mobile) to select a name (Default: ADEEB RAZIN).
+2. Select a name from the dashboard.
 3. View the weekly schedule.
 
 ### For Admins
 1. Click "Admin Login" in the header.
 2. Enter your Supabase user credentials.
 3. Once logged in:
-   - **Add Slot**: Click the "+ Add Slot" button in the header.
-   - **Edit Slot**: Hover over a card (or look at the bottom on mobile) and click "Edit".
-   - **Delete Slot**: Click "Delete".
-4. Changes are saved immediately and broadcast to all connected users.
-
-## Adding New Persons
-Currently, adding new Persons (Students/Classes) is done via the Supabase Dashboard for security simplicity.
-1. Go to Supabase -> Table Editor -> `persons`.
-2. Click "Insert Row" and add the name.
+   - **Add Slot**: Click the "+ Add Slot" button.
+   - **Edit/Delete**: Use controls on the cards.
+   - **Manage Persons**: Use the Supabase Dashboard to add/edit student names and class names.
